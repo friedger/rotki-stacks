@@ -106,10 +106,28 @@ const addresses = computed<string[]>({
   },
 });
 
-const showWalletImport = computed<boolean>(() => {
+// MetaMask / browser-wallet import applies to EVM chains.
+const showMetamask = computed<boolean>(() => {
   const model = get(modelValue);
   return get(isEvm(model.chain)) || model.chain === 'all';
 });
+
+// The Ryder One can supply an address for these chains; map the current chain to its symbol.
+const ryderSymbol = computed<string | undefined>(() => {
+  const { chain } = get(modelValue);
+  if (get(isEvm(chain)) || chain === 'all')
+    return 'ETH';
+  if (chain === Blockchain.BTC)
+    return 'BTC';
+  if (chain === Blockchain.STACKS)
+    return 'STX';
+  if (chain === Blockchain.SOLANA)
+    return 'SOL';
+  return undefined;
+});
+
+// Show the import row when either MetaMask (EVM) or a Ryder One account applies.
+const showWalletImport = computed<boolean>(() => get(showMetamask) || get(ryderSymbol) !== undefined);
 
 function validate(): Promise<boolean> {
   assert(isDefined(address));
@@ -136,6 +154,8 @@ defineExpose({
         :disabled="loading || editMode"
         :multi="!editMode"
         :show-wallet-import="showWalletImport"
+        :metamask="showMetamask"
+        :ryder-symbol="ryderSymbol"
       />
       <AccountDataInput
         v-model:tags="tags"

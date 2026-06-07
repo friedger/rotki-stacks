@@ -1,0 +1,25 @@
+[package]
+name = "ryder-sidecar"
+version = "0.1.0"
+description = "rotki <-> Ryder One bridge: reads device addresses over NFC (PC/SC) and emits JSON"
+edition = "2021"
+
+[[bin]]
+name = "ryder-sidecar"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+
+# Desktop transport: PC/SC smartcard/NFC reader.
+pcsc = "2.8.2"
+
+# The Ryder protocol stack (Session / pairing / secure channel / commands / address derivation)
+# lives in the *minimal* build of the tool SDK (default-features = false). We supply the transport
+# ourselves via NfcConnection::new_with_transceiver (see src/transport.rs).
+#
+# NOTE: this is a path dependency on the sibling `light-labs/ryder-nfc-tool` checkout. It must be
+# present next to the rotki repo for this crate to build (see README.md).
+ryder_nfc_tool = { path = "../../../light-labs/ryder-nfc-tool", default-features = false }

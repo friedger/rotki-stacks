@@ -27,6 +27,23 @@ interface MetamaskImportSupport {
 
 type MetamaskImport = MetamaskImportError | MetamaskImportSupport;
 
+export interface RyderChainAddress {
+  readonly chain: string;
+  readonly symbol: string;
+  readonly path: string;
+  readonly address: string;
+}
+
+interface RyderImportError {
+  readonly error: string;
+}
+
+interface RyderImportSuccess {
+  readonly accounts: RyderChainAddress[];
+}
+
+export type RyderImport = RyderImportError | RyderImportSuccess;
+
 export interface Credentials {
   readonly username: string;
   readonly password: string;
@@ -116,6 +133,7 @@ export interface Interop {
   debugSettings?: () => DebugSettings | undefined;
   apiUrls: () => ApiUrls;
   metamaskImport: () => Promise<MetamaskImport>;
+  importFromRyder: () => Promise<RyderImport>;
   checkForUpdates: () => Promise<boolean>;
   downloadUpdate: (progress: (percentage: number) => void) => Promise<boolean>;
   installUpdate: () => Promise<boolean | Error>;
