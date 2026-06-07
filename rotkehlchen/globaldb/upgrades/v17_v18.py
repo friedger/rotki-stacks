@@ -28,7 +28,7 @@ def migrate_to_v18(connection: 'DBConnection', progress_handler: 'DBUpgradeProgr
 
     @progress_step('Add Stacks token kinds to token_kinds table')
     def _add_stacks_token_kinds(write_cursor: 'DBCursor') -> None:
-        """Add token kinds F (SIP10_FUNGIBLE) and G (SIP10_NFT) and the STACKS_TOKEN
+        """Add token kinds F (SIP010_FUNGIBLE) and G (SIP009_NFT) and the STACKS_TOKEN
         asset type for Stacks."""
         write_cursor.executescript("""
             /* SIP10 FUNGIBLE (Stacks) */

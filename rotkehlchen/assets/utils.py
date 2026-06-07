@@ -427,7 +427,8 @@ def get_or_create_solana_token(
 def get_or_create_stacks_token(
         userdb: 'DBHandler',
         contract_id: StacksAddress,
-        token_kind: STACKS_TOKEN_KINDS_TYPE = TokenKind.SIP10_FUNGIBLE,
+        asset_name: str,
+        token_kind: STACKS_TOKEN_KINDS_TYPE = TokenKind.SIP010_FUNGIBLE,
         symbol: str | None = None,
         name: str | None = None,
         decimals: int | None = None,
@@ -435,14 +436,17 @@ def get_or_create_stacks_token(
         coingecko: str | None = None,
         cryptocompare: str | None = None,
 ) -> StacksToken:
-    """Given a Stacks contract ID return the StacksToken.
+    """Given a Stacks contract ID and asset name return the StacksToken.
 
     If the token exists in the GlobalDB it's returned. If not it's created and added.
 
     Args:
         userdb: The database handler
-        contract_id: The Stacks contract ID (e.g., SP3K8BC0...sbtc-token)
-        token_kind: The token kind (SIP10_FUNGIBLE or SIP10_NFT)
+        contract_id: The Stacks contract principal {address}.{contract}
+            (e.g., SP3K8BC0...sbtc-token), WITHOUT the ::asset-name suffix.
+        asset_name: The SIP-010/SIP-009 asset name (the part after '::' in the Hiro
+            asset id, e.g. sbtc-token). Forms the CAIP-19 identifier with contract_id.
+        token_kind: The token kind (SIP010_FUNGIBLE or SIP009_NFT)
         symbol: Optional token symbol
         name: Optional token name
         decimals: Optional decimal places
@@ -452,12 +456,10 @@ def get_or_create_stacks_token(
 
     Returns:
         StacksToken instance
-
-    Note: The contract_id should NOT include the ::asset-name suffix.
-    Strip it before calling: contract_id.split('::')[0]
     """
     identifier = stacks_contract_to_identifier(
         contract_id=contract_id,
+        asset_name=asset_name,
         token_type=token_kind,
     )
 
@@ -528,6 +530,7 @@ def get_or_create_stacks_token(
     )
     token = StacksToken.initialize(
         contract_id=contract_id,
+        asset_name=asset_name,
         token_kind=token_kind,
         name=final_name,
         symbol=final_symbol,

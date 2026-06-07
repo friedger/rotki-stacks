@@ -1326,9 +1326,9 @@ class TokenKind(DBCharEnumMixIn):
     SPL_TOKEN = auto()  # fungible tokens on solana - https://spl.solana.com/token
     SPL_NFT = auto()  # nfts on solana - https://developers.metaplex.com/token-metadata
 
-    # Stacks tokens (SIP-10)
-    SIP10_FUNGIBLE = auto()  # fungible tokens on Stacks
-    SIP10_NFT = auto()  # NFTs on Stacks (SIP-9 compatible)
+    # Stacks tokens
+    SIP010_FUNGIBLE = auto()  # fungible tokens on Stacks (SIP-010 standard)
+    SIP009_NFT = auto()  # NFTs on Stacks (SIP-009 standard)
 
     @classmethod
     def deserialize_evm_from_db(cls, value: Any) -> 'EVM_TOKEN_KINDS_TYPE':
@@ -1349,7 +1349,7 @@ class TokenKind(DBCharEnumMixIn):
     @classmethod
     def deserialize_stacks_from_db(cls, value: Any) -> 'STACKS_TOKEN_KINDS_TYPE':
         """Deserialize specifically for Stacks token kinds"""
-        if (result := cls.deserialize_from_db(value)) not in (TokenKind.SIP10_FUNGIBLE, TokenKind.SIP10_NFT):  # noqa: E501
+        if (result := cls.deserialize_from_db(value)) not in (TokenKind.SIP010_FUNGIBLE, TokenKind.SIP009_NFT):  # noqa: E501
             raise DeserializationError(f'Expected Stacks token kind, got {result}')
 
         return result  # type: ignore[return-value]  # the check above ensures it's stacks token kind.
@@ -1359,7 +1359,7 @@ EVM_TOKEN_KINDS_TYPE = Literal[TokenKind.ERC20, TokenKind.ERC721]
 EVM_TOKEN_KINDS: tuple[EVM_TOKEN_KINDS_TYPE, ...] = typing.get_args(EVM_TOKEN_KINDS_TYPE)
 SOLANA_TOKEN_KINDS_TYPE = Literal[TokenKind.SPL_TOKEN, TokenKind.SPL_NFT]
 SOLANA_TOKEN_KINDS: tuple[SOLANA_TOKEN_KINDS_TYPE, ...] = typing.get_args(SOLANA_TOKEN_KINDS_TYPE)
-STACKS_TOKEN_KINDS_TYPE = Literal[TokenKind.SIP10_FUNGIBLE, TokenKind.SIP10_NFT]
+STACKS_TOKEN_KINDS_TYPE = Literal[TokenKind.SIP010_FUNGIBLE, TokenKind.SIP009_NFT]
 STACKS_TOKEN_KINDS: tuple[STACKS_TOKEN_KINDS_TYPE, ...] = typing.get_args(STACKS_TOKEN_KINDS_TYPE)
 
 

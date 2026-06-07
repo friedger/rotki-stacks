@@ -126,10 +126,10 @@ class TestStacksTypeRegistration:
 
     def test_token_kinds(self) -> None:
         """Test that SIP10 token kinds are properly registered."""
-        assert hasattr(TokenKind, 'SIP10_FUNGIBLE')
-        assert hasattr(TokenKind, 'SIP10_NFT')
-        assert TokenKind.SIP10_FUNGIBLE in STACKS_TOKEN_KINDS
-        assert TokenKind.SIP10_NFT in STACKS_TOKEN_KINDS
+        assert hasattr(TokenKind, 'SIP010_FUNGIBLE')
+        assert hasattr(TokenKind, 'SIP009_NFT')
+        assert TokenKind.SIP010_FUNGIBLE in STACKS_TOKEN_KINDS
+        assert TokenKind.SIP009_NFT in STACKS_TOKEN_KINDS
 
     def test_chains_with_chain_manager(self) -> None:
         """Test that STACKS is in CHAINS_WITH_CHAIN_MANAGER."""

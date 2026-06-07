@@ -86,23 +86,10 @@ export function isStacksTokenIdentifier(identifier?: string): boolean {
   if (!identifier)
     return false;
 
-  // Format: stacks/{token_type}:{contract_principal}
-  // Examples: stacks/sip10_fungible:SP...CONTRACT, stacks/sip10_nft:SP...CONTRACT
-  if (!identifier.startsWith('stacks/'))
-    return false;
-
-  const parts = identifier.split(':');
-  if (parts.length !== 2)
-    return false;
-
-  const prefix = parts[0];
-  const tokenType = prefix.slice(7); // Remove 'stacks/'
-  if (!['sip10_fungible', 'sip10_nft', 'native'].includes(tokenType))
-    return false;
-
-  const contractPrincipal = parts[1];
-  // Stacks addresses start with SP (mainnet) or SM (testnet)
-  return !(!contractPrincipal || (!contractPrincipal.startsWith('SP') && !contractPrincipal.startsWith('SM')));
+  // CAIP-19: stacks:{chain}/{sip010|sip009}:{address}.{contract}.{asset_name}[/{nftId}]
+  // e.g. stacks:1/sip010:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token
+  // https://github.com/ChainAgnostic/namespaces/blob/main/stacks/caip19.md
+  return /^stacks:\d+\/(?:sip010|sip009):S[MP][0-9A-Z]+\.[\w-]+\.[\w-]+/.test(identifier);
 }
 
 export function getAddressFromEvmIdentifier(identifier?: string): string {
@@ -148,7 +135,10 @@ export function getContractFromStacksIdentifier(identifier?: string): string {
   if (!identifier)
     return '';
 
-  // Format: stacks/{token_type}:{contract_principal}
-  const parts = identifier.split(':');
-  return parts[1] ?? '';
+  // CAIP-19: stacks:{chain}/{namespace}:{address}.{contract}.{asset_name}[/{nftId}]
+  // Return the contract principal {address}.{contract} (drop the chain/namespace prefix,
+  // the trailing .{asset_name} and any /{nftId}).
+  const assetReference = identifier.split('/')[1]?.split(':')[1] ?? '';
+  const lastDot = assetReference.lastIndexOf('.');
+  return lastDot === -1 ? assetReference : assetReference.slice(0, lastDot);
 }
