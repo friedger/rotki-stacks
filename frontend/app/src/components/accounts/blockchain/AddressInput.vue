@@ -14,6 +14,10 @@ const props = defineProps<{
   disabled: boolean;
   multi: boolean;
   showWalletImport?: boolean;
+  // Whether to show the MetaMask/browser-wallet import (EVM chains).
+  metamask?: boolean;
+  // Ryder One account symbol to import for the current chain ('STX'/'BTC'/'ETH'/'SOL'), if any.
+  ryderSymbol?: string;
 }>();
 
 const { t } = useI18n({ useScope: 'global' });
@@ -213,6 +217,8 @@ defineExpose({
       <WalletAddressesImport
         v-if="showWalletImport"
         :disabled="disabled"
+        :metamask="metamask"
+        :ryder-symbol="ryderSymbol"
         @update:addresses="updateAddressesFromWalletImport($event)"
       />
     </div>

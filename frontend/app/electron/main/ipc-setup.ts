@@ -7,6 +7,7 @@ import { IpcCommands } from '@electron/ipc-commands';
 import {
   BackendHandlers,
   OAuthHandlers,
+  RyderImportHandlers,
   SecurityHandlers,
   SystemHandlers,
   UpdateHandlers,
@@ -39,6 +40,7 @@ export class IpcManager {
   private readonly updateHandlers: UpdateHandlers;
   private readonly securityHandlers: SecurityHandlers;
   private readonly walletImportHandlers: WalletImportHandlers;
+  private readonly ryderImportHandlers: RyderImportHandlers;
   private readonly walletBridgeIpcHandlers: WalletBridgeIpcHandlers;
   private readonly oauthHandlers: OAuthHandlers;
 
@@ -66,6 +68,7 @@ export class IpcManager {
     this.updateHandlers = new UpdateHandlers(logger, config);
     this.securityHandlers = new SecurityHandlers();
     this.walletImportHandlers = new WalletImportHandlers(logger);
+    this.ryderImportHandlers = new RyderImportHandlers(logger);
     this.walletBridgeIpcHandlers = new WalletBridgeIpcHandlers(logger, this.walletBridgeWebSocketServer);
     this.oauthHandlers = new OAuthHandlers(logger);
 
@@ -146,6 +149,7 @@ export class IpcManager {
 
     // Wallet import handlers
     ipcMain.handle(IpcCommands.INVOKE_WALLET_IMPORT, this.walletImportHandlers.importFromWallet);
+    ipcMain.handle(IpcCommands.INVOKE_RYDER_IMPORT, this.ryderImportHandlers.importFromRyder);
 
     // Wallet bridge IPC handlers
     ipcMain.handle(IpcCommands.OPEN_WALLET_CONNECT_BRIDGE, this.walletBridgeIpcHandlers.openWalletConnectBridge);

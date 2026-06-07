@@ -1,4 +1,4 @@
-import type { BackendOptions, Listeners, StartupError, SystemVersion, TrayUpdate } from '@shared/ipc';
+import type { BackendOptions, Listeners, RyderChainAddress, StartupError, SystemVersion, TrayUpdate } from '@shared/ipc';
 import type { LogLevel } from '@shared/log-level';
 import type { WebVersion } from '@/types';
 import { assert, type Theme } from '@rotki/common';
@@ -18,6 +18,7 @@ interface UseInteropReturn {
   premiumUserLoggedIn: (premiumUser: boolean) => void;
   closeApp: () => Promise<void>;
   metamaskImport: () => Promise<string[]>;
+  importFromRyder: () => Promise<RyderChainAddress[]>;
   restartBackend: (options: Partial<BackendOptions>) => Promise<boolean>;
   config: (defaults: boolean) => Promise<Partial<BackendOptions>>;
   version: () => Promise<SystemVersion | WebVersion>;
@@ -124,6 +125,18 @@ const interop: UseInteropReturn = {
       throw new Error(response.error);
 
     return response.addresses;
+  },
+
+  importFromRyder: async (): Promise<RyderChainAddress[]> => {
+    if (!window.interop)
+      throw new Error('environment does not support interop');
+
+    const response = await window.interop.importFromRyder();
+
+    if ('error' in response)
+      throw new Error(response.error);
+
+    return response.accounts;
   },
 
   navigate: async (url: string): Promise<void> => {

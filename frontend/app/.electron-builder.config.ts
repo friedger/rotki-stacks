@@ -54,6 +54,7 @@ async function afterSign(context: AfterPackContext): Promise<void> {
  * @see https://www.electron.build/configuration#configuration
  */
 export default {
+  productName: 'Ryder Wealth',
   appId: 'com.rotki.app',
   directories: {
     output: 'build',
