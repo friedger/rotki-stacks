@@ -38,7 +38,7 @@ def populate_stacks_tokens(db_path: Path, tokens: list[dict[str, str]]) -> int:
     Returns the number of tokens added.
     """
     stacks_type_char = AssetType.STACKS_TOKEN.serialize_for_db()
-    token_kind_char = TokenKind.SIP10_FUNGIBLE.serialize_for_db()
+    token_kind_char = TokenKind.SIP010_FUNGIBLE.serialize_for_db()
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -47,7 +47,8 @@ def populate_stacks_tokens(db_path: Path, tokens: list[dict[str, str]]) -> int:
 
     for row in tokens:
         contract_id = row['contract_id']
-        identifier = f'stacks/sip10_fungible:{contract_id}'
+        # CAIP-19: stacks:1/sip010:{address}.{contract}.{asset_name}
+        identifier = f'stacks:1/sip010:{contract_id}.{row["token_name"]}'
 
         # Check if token already exists
         cursor.execute('SELECT 1 FROM assets WHERE identifier = ?', (identifier,))

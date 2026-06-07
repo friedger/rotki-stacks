@@ -154,14 +154,13 @@ class StacksManager(ChainManagerWithTransactions[StacksAddress]):
         fungible_tokens = response.get('fungible_tokens', {})
 
         for token_id, token_data in fungible_tokens.items():
-            # Token ID format: CONTRACT_ID::asset-name
-            # We need just the CONTRACT_ID part
-            contract_parts = token_id.split('::')
-            if not contract_parts:
+            # Token ID format: CONTRACT_ID::asset-name. Both parts are needed: the
+            # CONTRACT_ID for metadata/contract calls and the asset-name for the CAIP-19 id.
+            if '::' not in token_id:
                 log.warning(f'Invalid token ID format for {address}: {token_id}')
                 continue
 
-            contract_id = contract_parts[0]  # Contract ID string, not StacksAddress
+            contract_id, asset_name = token_id.split('::', 1)  # contract_id is a str principal
 
             try:
                 balance_raw = int(token_data.get('balance', '0'))
@@ -184,6 +183,7 @@ class StacksManager(ChainManagerWithTransactions[StacksAddress]):
                 token = get_or_create_stacks_token(
                     userdb=self.database,
                     contract_id=contract_id,
+                    asset_name=asset_name,
                     name=metadata.name if metadata else None,
                     symbol=metadata.symbol if metadata else None,
                     decimals=metadata.decimals if metadata else None,

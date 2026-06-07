@@ -16,6 +16,8 @@ ETHEREUM_DIRECTIVE_LENGTH = len(ETHEREUM_DIRECTIVE)
 EVM_CHAIN_DIRECTIVE = 'eip155'
 SOLANA_CHAIN_DIRECTIVE = 'solana'
 STACKS_CHAIN_DIRECTIVE = 'stacks'
+STACKS_MAINNET_CHAIN_ID = 1  # CAIP-2 chain reference for Stacks mainnet
+STACKS_TESTNET_CHAIN_ID = 2147483648  # CAIP-2 chain reference for Stacks testnet
 
 
 def evm_address_to_identifier(
@@ -107,40 +109,67 @@ def solana_address_to_identifier(
     return f'{SOLANA_CHAIN_DIRECTIVE}/{str(token_type)[4:]}:{address}'
 
 
+_STACKS_TOKEN_NAMESPACES: dict[STACKS_TOKEN_KINDS_TYPE, str] = {
+    TokenKind.SIP010_FUNGIBLE: 'sip010',
+    TokenKind.SIP009_NFT: 'sip009',
+}
+
+
 def stacks_contract_to_identifier(
         contract_id: StacksAddress,
-        token_type: STACKS_TOKEN_KINDS_TYPE = TokenKind.SIP10_FUNGIBLE,
+        asset_name: str,
+        token_type: STACKS_TOKEN_KINDS_TYPE = TokenKind.SIP010_FUNGIBLE,
+        chain_id: int = STACKS_MAINNET_CHAIN_ID,
 ) -> str:
-    """Converts a Stacks contract ID and token type into an identifier.
+    """Format Stacks token information into the CAIP-19 identifier format.
 
-    Uses 'stacks' prefix for consistency with other chains.
+    Follows https://github.com/ChainAgnostic/namespaces/blob/main/stacks/caip19.md
+    e.g. stacks:1/sip010:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token
 
     Args:
-        contract_id: The contract principal
-            (e.g., SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.sbtc-token)
-        token_type: The token kind (SIP10_FUNGIBLE or SIP10_NFT)
+        contract_id: The contract principal, i.e. {address}.{contract-name}
+            (e.g. SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token)
+        asset_name: The SIP-010/SIP-009 asset name defined in the contract (e.g. sbtc-token).
+            This is the part after '::' in the asset id Hiro returns.
+        token_type: The token kind (SIP010_FUNGIBLE or SIP009_NFT)
+        chain_id: CAIP-2 chain reference (1 = mainnet, 2147483648 = testnet)
 
     Returns:
-        Identifier in format 'stacks/sip10_fungible:<contract_id>'
-
-    Note:
-        The contract_id should NOT include the ::asset-name suffix that Hiro API returns.
-        Strip it before calling this function: contract_id.split('::')[0]
+        CAIP-19 identifier 'stacks:{chain_id}/{namespace}:{contract_id}.{asset_name}'
     """
-    # Use .name to get 'SIP10_FUNGIBLE' (with underscore), not str() which gives 'sip10 fungible'
-    return f'{STACKS_CHAIN_DIRECTIVE}/{token_type.name.lower()}:{contract_id}'
+    namespace = _STACKS_TOKEN_NAMESPACES[token_type]
+    return f'{STACKS_CHAIN_DIRECTIVE}:{chain_id}/{namespace}:{contract_id}.{asset_name}'
+
+
+def _stacks_asset_reference(identifier: str) -> str | None:
+    """Return the '{address}.{contract}.{asset_name}' reference of a CAIP-19 Stacks
+    identifier (NFT token id stripped), or None if the identifier is not a Stacks one."""
+    if not identifier.startswith(f'{STACKS_CHAIN_DIRECTIVE}:'):
+        return None
+    try:
+        # stacks:{chain}/{namespace}:{address}.{contract}.{asset_name}[/{nft_id}]
+        return identifier.split('/', 1)[1].split(':', 1)[1].split('/', 1)[0]
+    except IndexError:
+        return None
 
 
 def identifier_to_stacks_contract(identifier: str) -> StacksAddress | None:
-    """Parse Stacks identifier and return the contract ID or None on error."""
-    if not identifier.startswith(f'{STACKS_CHAIN_DIRECTIVE}/'):
+    """Parse a CAIP-19 Stacks identifier and return the contract ID ({address}.{contract})
+    or None on error. The trailing '.{asset_name}' (and optional '/{nft_id}') are stripped."""
+    if (asset_reference := _stacks_asset_reference(identifier)) is None:
+        return None
+    try:
+        return StacksAddress(asset_reference.rsplit('.', 1)[0])  # drop trailing .asset_name
+    except (ValueError, IndexError):
         return None
 
+
+def identifier_to_stacks_asset_name(identifier: str) -> str | None:
+    """Return the SIP-010/SIP-009 asset name component of a CAIP-19 Stacks identifier,
+    or None on error."""
+    if (asset_reference := _stacks_asset_reference(identifier)) is None:
+        return None
     try:
-        # Format: stacks/sip10_fungible:CONTRACT_ID
-        parts = identifier.split(':')
-        if len(parts) != 2:
-            return None
-        return StacksAddress(parts[1])
-    except (ValueError, IndexError):
+        return asset_reference.rsplit('.', 1)[1]
+    except IndexError:
         return None

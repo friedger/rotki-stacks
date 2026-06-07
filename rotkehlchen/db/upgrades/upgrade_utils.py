@@ -83,7 +83,8 @@ def process_stacks_asset_migration(
     Returns a list of stacks token data tuples for insertion into the database.
     (empty if CSV missing)
 
-    FROZEN: Do not modify. Used for v15->v16 globaldb upgrade.
+    Builds CAIP-19 identifiers (stacks:1/sip010:{contract_id}.{token_name}) per
+    https://github.com/ChainAgnostic/namespaces/blob/main/stacks/caip19.md
     """
     dir_path = Path(__file__).resolve().parent.parent.parent
     if not (csv_file := dir_path / 'data' / 'stacks_tokens_data.csv').exists():
@@ -93,10 +94,12 @@ def process_stacks_asset_migration(
     with csv_file.open(encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            identifier = f'stacks/sip10_fungible:{row["contract_id"]}'
+            # CAIP-19: stacks:1/sip010:{address}.{contract}.{asset_name}. Inlined (not via
+            # the resolver helper) so this migration data builder stays self-contained.
+            identifier = f'stacks:1/sip010:{row["contract_id"]}.{row["token_name"]}'
             stacks_tokens_data.append((
                 identifier,
-                'F',  # SIP10_FUNGIBLE
+                'F',  # SIP010_FUNGIBLE
                 row['contract_id'],
                 int(row['decimals']) if row['decimals'] else None,
                 row['protocol'] or None,

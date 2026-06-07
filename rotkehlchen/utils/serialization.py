@@ -15,7 +15,10 @@ from rotkehlchen.assets.asset import (
     UnderlyingToken,
 )
 from rotkehlchen.assets.types import AssetType
-from rotkehlchen.constants.resolver import tokenid_to_collectible_id
+from rotkehlchen.constants.resolver import (
+    identifier_to_stacks_asset_name,
+    tokenid_to_collectible_id,
+)
 from rotkehlchen.fval import FVal
 from rotkehlchen.types import ChainID, Location, StacksAddress, Timestamp, TokenKind
 
@@ -114,6 +117,7 @@ def deserialize_asset_with_oracles_from_db(
     if asset_type == AssetType.STACKS_TOKEN:
         return StacksToken.initialize(
             contract_id=StacksAddress(asset_data[2]),
+            asset_name=identifier_to_stacks_asset_name(identifier) or asset_data[2].rsplit('.', 1)[-1],  # noqa: E501
             token_kind=TokenKind.deserialize_stacks_from_db(asset_data[13]),
             decimals=asset_data[3],
             name=identifier if asset_data[4] is None else asset_data[4],

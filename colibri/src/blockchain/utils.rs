@@ -33,14 +33,14 @@ const SOLANA_ADDRESS_MAX_LENGTH: usize = 44;
 /// Parses an asset identifier supporting EVM, Solana, and Stacks formats:
 /// - EVM: "eip155:{chain_id}/{asset_type}:{contract_address}[/{token_id}]"
 /// - Solana: "solana/{asset_type}:{contract_address}"
-/// - Stacks: "stacks/{asset_type}:{contract_principal}"
+/// - Stacks (CAIP-19): "stacks:{chain_id}/{sip010|sip009}:{address}.{contract}.{asset_name}"
 ///
 /// Examples:
 ///   - "eip155:1/erc20:0x6B175474E89094C44Da98b954EedeAC495271d0F" (ERC-20 token)
 ///   - "eip155:1/erc721:0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/1" (ERC-721 NFT with token ID)
 ///   - "solana/token:So11111111111111111111111111111111111111112" (Solana SPL token)
 ///   - "solana/nft:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" (Solana NFT)
-///   - "stacks/sip10_fungible:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token" (Stacks SIP-10)
+///   - "stacks:1/sip010:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token" (SIP-010)
 ///
 /// Returns None if the format is invalid or any required component is missing.
 pub fn parse_asset_identifier(identifier: &str) -> Option<AssetIdentifier> {
@@ -54,7 +54,7 @@ pub fn parse_asset_identifier(identifier: &str) -> Option<AssetIdentifier> {
         parse_evm_identifier(&parts)
     } else if blockchain_part == "solana" {
         parse_solana_identifier(&parts)
-    } else if blockchain_part == "stacks" {
+    } else if blockchain_part.starts_with("stacks:") {
         parse_stacks_identifier(&parts)
     } else {
         None
@@ -123,24 +123,35 @@ const STACKS_ADDRESS_MIN_LENGTH: usize = 39;
 // Stacks contract principal maximum length (address.contract-name)
 const STACKS_ADDRESS_MAX_LENGTH: usize = 128;
 
-/// Parse Stacks asset identifier
-/// Format: "stacks/{asset_type}:{contract_principal}"
+/// Parse a Stacks CAIP-19 asset identifier
+/// Format: "stacks:{chain_id}/{sip010|sip009}:{address}.{contract}.{asset_name}[/{nft_id}]"
+/// (https://github.com/ChainAgnostic/namespaces/blob/main/stacks/caip19.md)
 /// Examples:
-///   - "stacks/sip10_fungible:SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.token-abtc"
-///   - "stacks/sip10_fungible:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token"
+///   - "stacks:1/sip010:SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.token-abtc.bridged-btc"
+///   - "stacks:1/sip010:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token"
 fn parse_stacks_identifier(parts: &[&str]) -> Option<AssetIdentifier> {
-    // Parse asset type and contract principal from "sip10_fungible:SP3K8BC0...token" format
+    // parts[0] = "stacks:{chain_id}"
+    let chain_parts: Vec<&str> = parts[0].splitn(2, ':').collect();
+    if chain_parts.len() != 2 {
+        return None;
+    }
+    let chain_id = chain_parts[1].parse::<u64>().ok()?;
+
+    // parts[1] = "{sip010|sip009}:{address}.{contract}.{asset_name}"
     let asset_parts: Vec<&str> = parts[1].splitn(2, ':').collect();
     if asset_parts.len() != 2 {
         return None;
     }
-    // Valid Stacks asset types
-    if !matches!(asset_parts[0], "sip10_fungible" | "sip10_nft" | "native") {
+    // Valid Stacks asset namespaces (SIP-010 fungible, SIP-009 NFT)
+    if !matches!(asset_parts[0], "sip010" | "sip009") {
         return None;
     }
 
-    let contract_principal = asset_parts[1];
-    // Validate Stacks address format
+    // The asset reference is "{address}.{contract}.{asset_name}". Strip the trailing
+    // asset name to get the contract principal "{address}.{contract}" that Hiro expects.
+    let (contract_principal, _asset_name) = asset_parts[1].rsplit_once('.')?;
+
+    // Validate Stacks contract principal format
     if contract_principal.is_empty()
         || contract_principal.len() < STACKS_ADDRESS_MIN_LENGTH
         || contract_principal.len() > STACKS_ADDRESS_MAX_LENGTH
@@ -154,9 +165,9 @@ fn parse_stacks_identifier(parts: &[&str]) -> Option<AssetIdentifier> {
     }
 
     Some(AssetIdentifier {
-        chain_id: 0, // Not used for Hiro API - we use contract principal directly
+        chain_id,
         contract_address: AssetAddress::Stacks(contract_principal.to_string()),
-        token_id: None,
+        token_id: parts.get(2).map(|s| s.to_string()),
     })
 }
 
@@ -217,11 +228,11 @@ mod tests {
             Some(expected_solana_nft)
         );
 
-        // Test Stacks SIP-10 fungible token format
+        // Test Stacks SIP-010 fungible token format (CAIP-19)
         let stacks_sip10 =
-            "stacks/sip10_fungible:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token";
+            "stacks:1/sip010:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token";
         let expected_stacks_sip10 = AssetIdentifier {
-            chain_id: 0,
+            chain_id: 1,
             contract_address: AssetAddress::Stacks(
                 "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token".to_string(),
             ),
@@ -232,11 +243,11 @@ mod tests {
             Some(expected_stacks_sip10)
         );
 
-        // Test Stacks SIP-10 fungible token format with SP prefix
+        // Test Stacks SIP-010 fungible token format with SP prefix (CAIP-19)
         let stacks_sp =
-            "stacks/sip10_fungible:SP4SZE494VC2YC5JYG7AYFQ44F5Q4PYV7DVMDPBG.ststx-token";
+            "stacks:1/sip010:SP4SZE494VC2YC5JYG7AYFQ44F5Q4PYV7DVMDPBG.ststx-token.ststx";
         let expected_stacks_sp = AssetIdentifier {
-            chain_id: 0,
+            chain_id: 1,
             contract_address: AssetAddress::Stacks(
                 "SP4SZE494VC2YC5JYG7AYFQ44F5Q4PYV7DVMDPBG.ststx-token".to_string(),
             ),
@@ -314,18 +325,34 @@ mod tests {
             None
         );
 
-        // Stacks address too short
-        assert_eq!(parse_asset_identifier("stacks/sip10_fungible:SP123.tok"), None);
+        // Stacks contract principal too short
+        assert_eq!(parse_asset_identifier("stacks:1/sip010:SP123.tok.tok"), None);
 
-        // Stacks address with wrong prefix
+        // Stacks contract principal with wrong prefix
         assert_eq!(
             parse_asset_identifier(
-                "stacks/sip10_fungible:XX3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token"
+                "stacks:1/sip010:XX3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token"
             ),
             None
         );
 
-        // Missing Stacks address
-        assert_eq!(parse_asset_identifier("stacks/sip10_fungible:"), None);
+        // Missing asset reference
+        assert_eq!(parse_asset_identifier("stacks:1/sip010:"), None);
+
+        // Unknown asset namespace (not sip010/sip009)
+        assert_eq!(
+            parse_asset_identifier(
+                "stacks:1/sip999:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.sbtc-token"
+            ),
+            None
+        );
+
+        // Old (pre-CAIP-19) format is no longer accepted
+        assert_eq!(
+            parse_asset_identifier(
+                "stacks/sip10_fungible:SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token"
+            ),
+            None
+        );
     }
 }

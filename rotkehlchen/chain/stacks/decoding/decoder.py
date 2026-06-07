@@ -258,11 +258,11 @@ class StacksTransactionDecoder(TransactionDecoder[StacksTransaction, StacksDecod
                 asset_data = event.get('asset', {})
                 asset_identifier = asset_data.get('asset_id', '')
 
-                # asset_identifier is in format: contract_id::token_name
+                # asset_identifier is in format: contract_id::asset_name
                 if '::' not in asset_identifier:
                     continue
 
-                contract_id = asset_identifier.split('::')[0]
+                contract_id, asset_name = asset_identifier.split('::', 1)
                 raw_amount = int(asset_data.get('amount', '0'))
 
                 if raw_amount == 0:
@@ -283,6 +283,7 @@ class StacksTransactionDecoder(TransactionDecoder[StacksTransaction, StacksDecod
                     token = get_or_create_stacks_token(
                         userdb=self.database,
                         contract_id=contract_id,
+                        asset_name=asset_name,
                         name=metadata.name if metadata else None,
                         symbol=metadata.symbol if metadata else None,
                         decimals=metadata.decimals if metadata else None,

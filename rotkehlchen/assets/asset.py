@@ -14,6 +14,7 @@ from rotkehlchen.constants.misc import NFT_DIRECTIVE, ONE, ZERO
 from rotkehlchen.constants.resolver import (
     ChainID,
     evm_address_to_identifier,
+    identifier_to_stacks_asset_name,
     solana_address_to_identifier,
     stacks_contract_to_identifier,
     tokenid_to_collectible_id,
@@ -898,6 +899,7 @@ class StacksToken(CryptoAsset):
             cls: type['StacksToken'],
             contract_id: StacksAddress,
             token_kind: STACKS_TOKEN_KINDS_TYPE,
+            asset_name: str,
             name: str | None = None,
             symbol: str | None = None,
             started: Timestamp | None = None,
@@ -910,6 +912,7 @@ class StacksToken(CryptoAsset):
     ) -> 'StacksToken':
         identifier = stacks_contract_to_identifier(
             contract_id=contract_id,
+            asset_name=asset_name,
             token_type=token_kind,
         )
         asset = StacksToken(identifier=identifier, direct_field_initialization=True)
@@ -940,8 +943,12 @@ class StacksToken(CryptoAsset):
         That error would be bad because it would mean somehow an unknown id made it into the DB
         """
         swapped_for = CryptoAsset(entry[7]) if entry[7] is not None else None
+        # entry[0] is the CAIP-19 identifier; recover the asset name component from it
+        # (falling back to the contract name) so the identifier round-trips exactly.
+        asset_name = identifier_to_stacks_asset_name(entry[0]) or entry[1].rsplit('.', 1)[-1]
         return StacksToken.initialize(
             contract_id=StacksAddress(entry[1]),
+            asset_name=asset_name,
             token_kind=TokenKind.deserialize_stacks_from_db(entry[2]),
             decimals=entry[3],
             name=entry[4],
