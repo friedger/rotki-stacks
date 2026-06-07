@@ -11,7 +11,7 @@ Rotki is a privacy-focused crypto portfolio management and tax reporting applica
 
 ### Fork Purpose: Stacks Integration
 
-This fork adds first-class Stacks blockchain support. See `.claude/docs/stacks-integration-prd.md` for full scope.
+This fork adds first-class Stacks blockchain support. See `docs/stacks-chain/stacks-integration-prd.md` for full scope.
 
 ### CRITICAL: Fork-Only Development
 
@@ -54,8 +54,8 @@ If unsure, use a worktree + PR.
 | `docs/stacks-chain/release-process.md` | Creating releases, Docker publishing | **Cutting releases, troubleshooting CI, rollback** |
 | `docs/stacks-chain/dev-environment.md` | Running dev environment correctly | **Dev setup issues, CORS errors, service startup** |
 | `docs/stacks-chain/stacks-integration-prd.md` | WHAT to build (features, scope) | Planning new Stacks features |
-| `.claude/docs/architecture/quick-reference.md` | HOW patterns (common tasks) | During implementation |
-| `.claude/docs/architecture/*.md` | Detailed implementation guides | Phase-specific work |
+| `docs/stacks-chain/architecture/quick-reference.md` | HOW patterns (common tasks) | During implementation |
+| `docs/stacks-chain/architecture/*.md` | Detailed implementation guides | Phase-specific work |
 | `.claude/rules/*.md` | Code conventions | When writing code |
 
 **For fork maintenance**: Check `fork-maintenance-plan.md` first - it has Quick Reference section at top.
@@ -64,7 +64,7 @@ If unsure, use a worktree + PR.
 ## Development Commands
 
 ### Prerequisites
-- Node.js 22+, pnpm 10+, Python 3.11+, Rust (stable), uv
+- Node.js 24, pnpm 11, Python 3.11+, Rust (stable), uv
 
 ### Quick Start
 

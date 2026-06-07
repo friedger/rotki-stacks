@@ -9,10 +9,46 @@ Rotki is a privacy-focused crypto portfolio management and tax reporting applica
 - **Vue.js/TypeScript frontend** (Electron desktop app + web interface)
 - **Rust service** (Colibri - performance-critical components)
 
+### Fork Purpose: Stacks Integration
+
+This fork adds first-class Stacks blockchain support. See `docs/stacks-chain/stacks-integration-prd.md` for full scope.
+
+### CRITICAL: Fork-Only Development
+
+**ALL work happens on this fork (`alexlmiller/rotki-stacks`), NOT upstream (`rotki/rotki`).**
+
+- All commits, branches, issues, and PRs target this fork.
+- Never push to or create issues/PRs on upstream without explicit permission.
+- Use `origin` for fork work and `upstream` only as a read-only source for syncs unless explicitly told otherwise.
+
+After cloning, configure: `gh repo set-default alexlmiller/rotki-stacks`
+
+### Fork Maintenance
+
+When working on fork operations, always consult `docs/stacks-chain/fork-maintenance-plan.md` for:
+- Syncing with upstream `rotki/rotki`
+- Creating releases and version tags
+- Resolving merge conflicts
+- Branch cleanup and health monitoring
+
+Quick sync command (see the maintenance plan for full process):
+```bash
+git checkout upstream-sync && git fetch upstream && git reset --hard upstream/develop && git push origin upstream-sync --force
+git checkout develop && git merge upstream-sync && git push origin develop
+```
+
+## Git Worktrees and Branch Policy
+
+- **Small changes (1-3 lines, context files):** direct to `develop`
+- **Medium changes (bug fixes, multi-file):** `git worktree add .worktrees/fix -b bugfixes` then PR
+- **Substantial changes (features, major changes):** `git worktree add .worktrees/feat-name -b feat/name` then PR
+
+If unsure, use a worktree and PR.
+
 ## Development Commands
 
 ### Prerequisites
-- Node.js 22+, pnpm 10+
+- Node.js 24, pnpm 11
 - Python 3.11+
 - Rust (stable toolchain)
 - uv (https://docs.astral.sh/uv/)

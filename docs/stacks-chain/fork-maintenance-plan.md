@@ -38,6 +38,10 @@ git push origin v1.42.0-stacks.1
 
 ### Upstream Sync Workflow
 
+Use the normal merge workflow for small, frequent upstream syncs. If the fork is far behind
+upstream or the merge would replay a large amount of stale fork history, prefer the
+`Major Replay Sync Workflow` below.
+
 **Full sync process:**
 ```bash
 # 1. Update upstream-sync
@@ -74,6 +78,47 @@ Full:
 - Smoke test: New user, add accounts, verify history
 
 **Reality check:** First sync (4 commits) had zero conflicts. Stacks is mostly additive.
+
+### Major Replay Sync Workflow
+
+Use this when the fork is hundreds of commits behind upstream and a normal merge would
+produce a hard-to-review conflict set or preserve obsolete fork history. The goal is a branch
+that equals current `upstream/develop` plus a small number of Stacks replay commits.
+
+**Process:**
+```bash
+# 1. Create a fresh replay branch from upstream
+git fetch upstream
+git checkout -b sync/upstream-vX.Y.Z upstream/develop
+
+# 2. Reapply Stacks changes as focused commits
+# Prefer a small number of reviewed commits over a giant merge commit.
+
+# 3. Open a PR to alexlmiller/rotki-stacks:develop
+git push origin sync/upstream-vX.Y.Z
+gh pr create --repo alexlmiller/rotki-stacks --base develop --head sync/upstream-vX.Y.Z
+```
+
+**Review checklist for replay PRs:**
+- Confirm topology: `git log --oneline upstream/develop..PR_HEAD` should show only replay commits.
+- Review the replay delta with `git diff upstream/develop..PR_HEAD --stat`.
+- Check migration-number collisions against both upstream and old fork versions.
+- Add fork-aware compatibility migrations for existing fork DBs before replacing `develop`.
+- Validate old-fork user DB upgrades, Stacks tests, frontend typecheck, and Docker/release build.
+
+**Integration:**
+
+Do not use GitHub's normal merge button for replay PRs. A replay branch is intended to
+replace `develop` after review:
+```bash
+git checkout develop
+git reset --hard sync/upstream-vX.Y.Z
+git push origin develop --force-with-lease
+```
+
+After replacement, update `upstream-sync`, promote to `main` only after validation, and tag
+the release. Tell anyone with a local `develop` checkout to resync because this rewrites fork
+history.
 
 ### Conflict Resolution
 
@@ -241,7 +286,7 @@ gh repo set-default alexlmiller/rotki-stacks
 | Branch | Purpose |
 |--------|---------|
 | `main` | Stable releases |
-| `develop` | Active development + upstream merges |
+| `develop` | Active development + upstream merges or reviewed replay syncs |
 | `upstream-sync` | Clean upstream mirror |
 
 **Flow:**

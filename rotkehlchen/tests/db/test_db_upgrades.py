@@ -35,7 +35,13 @@ from rotkehlchen.db.constants import (
 )
 from rotkehlchen.db.dbhandler import DBHandler
 from rotkehlchen.db.drivers.gevent import DBConnection, DBConnectionType
-from rotkehlchen.db.schema import DB_SCRIPT_CREATE_TABLES
+from rotkehlchen.db.schema import (
+    DB_CREATE_STACKS_ADDRESS_MAPPINGS,
+    DB_CREATE_STACKS_TRANSACTIONS,
+    DB_CREATE_STACKS_TRANSACTIONS_INDEXES,
+    DB_CREATE_STACKS_TX_MAPPINGS,
+    DB_SCRIPT_CREATE_TABLES,
+)
 from rotkehlchen.db.settings import ROTKEHLCHEN_DB_VERSION
 from rotkehlchen.db.upgrade_manager import (
     MIN_SUPPORTED_USER_DB_VERSION,
@@ -3362,9 +3368,116 @@ def test_latest_upgrade_correctness(user_data_dir):
     assert tables_after_creation - tables_after_upgrade == {'evm_internal_tx_conflicts'}
     assert views_after_creation - views_after_upgrade == set()
     new_tables = tables_after_upgrade - tables_before
-    assert new_tables == {'data_issues', 'event_metrics'}
+    assert new_tables == {
+        'stacks_transactions',
+        'stackstx_address_mappings',
+        'stacks_tx_mappings',
+    }
     new_views = views_after_upgrade - views_before
     assert new_views == set()
+    db.logout()
+
+
+@pytest.mark.parametrize('use_clean_caching_directory', [True])
+def test_v53_v54_moves_old_fork_stacks_location(user_data_dir):
+    """Old fork DBs used location 'y' for Stacks before upstream reused it."""
+    msg_aggregator = MessagesAggregator()
+    _use_prepared_db(user_data_dir, 'v50_rotkehlchen.db')
+    db_v53 = _init_db_with_target_version(
+        target_version=ROTKEHLCHEN_DB_VERSION - 1,
+        user_data_dir=user_data_dir,
+        msg_aggregator=msg_aggregator,
+        resume_from_backup=False,
+    )
+    old_stacks_location = 'y'
+    new_stacks_location = '|'
+    with db_v53.conn.write_ctx() as write_cursor:
+        write_cursor.execute('DELETE FROM location WHERE location=?', ('z',))
+        write_cursor.execute('DELETE FROM location WHERE location=?', (new_stacks_location,))
+        write_cursor.executescript(DB_CREATE_STACKS_TRANSACTIONS)
+        write_cursor.executescript(DB_CREATE_STACKS_TRANSACTIONS_INDEXES)
+        write_cursor.executescript(DB_CREATE_STACKS_ADDRESS_MAPPINGS)
+        write_cursor.executescript(DB_CREATE_STACKS_TX_MAPPINGS)
+        write_cursor.execute('INSERT OR IGNORE INTO assets(identifier) VALUES(?)', ('STX',))
+        write_cursor.execute(
+            'INSERT INTO stacks_transactions('
+            'tx_id, block_height, block_time, tx_type, sender_address, fee_rate, nonce, '
+            'tx_status'
+            ') VALUES(?, ?, ?, ?, ?, ?, ?, ?)',
+            (
+                '0xoldforkstacks',
+                1,
+                1700000000,
+                'TOKEN_TRANSFER',
+                'SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7',
+                '100',
+                1,
+                'success',
+            ),
+        )
+        write_cursor.execute(
+            'INSERT INTO history_events('
+            'entry_type, group_identifier, sequence_index, timestamp, location, '
+            'location_label, asset, amount, notes, type, subtype, extra_data, ignored'
+            ') VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (
+                HistoryBaseEntryType.STACKS_EVENT.serialize_for_db(),
+                '0xoldforkstacks',
+                0,
+                1700000000000,
+                old_stacks_location,
+                'SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7',
+                'STX',
+                '1',
+                'Receive 1 STX',
+                HistoryEventType.RECEIVE.serialize(),
+                HistoryEventSubType.NONE.serialize(),
+                None,
+                0,
+            ),
+        )
+        write_cursor.execute(
+            'INSERT INTO timed_location_data(timestamp, location, usd_value) VALUES(?, ?, ?)',
+            (1700000000, old_stacks_location, '1'),
+        )
+        write_cursor.execute(
+            'INSERT INTO manually_tracked_balances('
+            'asset, label, amount, location, category'
+            ') VALUES(?, ?, ?, ?, ?)',
+            ('STX', 'Old fork STX', '1', old_stacks_location, 'A'),
+        )
+        write_cursor.execute(
+            'INSERT INTO user_credentials(name, location, api_key, api_secret, passphrase) '
+            'VALUES(?, ?, ?, ?, ?)',
+            ('old-stacks', old_stacks_location, 'key', 'secret', None),
+        )
+    db_v53.logout()
+
+    db = _init_db_with_target_version(
+        target_version=ROTKEHLCHEN_DB_VERSION,
+        user_data_dir=user_data_dir,
+        msg_aggregator=msg_aggregator,
+        resume_from_backup=False,
+    )
+    with db.conn.read_ctx() as cursor:
+        assert cursor.execute(
+            'SELECT location, seq FROM location WHERE location IN (?, ?, ?, ?) ORDER BY seq',
+            ('y', 'z', '{', new_stacks_location),
+        ).fetchall() == [('y', 57), ('z', 58), ('{', 59), (new_stacks_location, 60)]
+        for table_name in (
+            'history_events',
+            'timed_location_data',
+            'manually_tracked_balances',
+            'user_credentials',
+        ):
+            assert cursor.execute(
+                f'SELECT COUNT(*) FROM {table_name} WHERE location=?',
+                (old_stacks_location,),
+            ).fetchone()[0] == 0
+            assert cursor.execute(
+                f'SELECT COUNT(*) FROM {table_name} WHERE location=?',
+                (new_stacks_location,),
+            ).fetchone()[0] == 1
     db.logout()
 
 
