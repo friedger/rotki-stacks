@@ -3929,6 +3929,10 @@
         "wallet_is_not_installed": "This browser doesn't have any wallets installed. You can go to the extension store of your browser and install one."
       },
       "only_metamask": "* Currently, only MetaMask supports multiple address selections. Other wallets only allow active address to be imported."
+    },
+    "import_from_ryder": {
+      "label": "Import from Ryder One",
+      "no_account": "The Ryder One did not return a {symbol} address."
     }
   },
   "internal_tx_conflicts": {

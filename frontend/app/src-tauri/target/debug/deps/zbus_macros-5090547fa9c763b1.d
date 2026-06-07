@@ -1,0 +1,10 @@
+/home/friedger/_repos/github/alexlmiller/rotki-stacks/frontend/app/src-tauri/target/debug/deps/zbus_macros-5090547fa9c763b1.d: /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/lib.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/error.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/iface.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/proxy.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/utils.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/../README.md
+
+/home/friedger/_repos/github/alexlmiller/rotki-stacks/frontend/app/src-tauri/target/debug/deps/libzbus_macros-5090547fa9c763b1.so: /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/lib.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/error.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/iface.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/proxy.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/utils.rs /home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/../README.md
+
+/home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/lib.rs:
+/home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/error.rs:
+/home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/iface.rs:
+/home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/proxy.rs:
+/home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/utils.rs:
+/home/friedger/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zbus_macros-5.16.0/src/../README.md:

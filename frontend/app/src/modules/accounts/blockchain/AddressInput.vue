@@ -10,11 +10,15 @@ import { toMessages } from '@/modules/core/common/validation/validation';
 const addresses = defineModel<string[]>('addresses', { required: true });
 const errorMessages = defineModel<ValidationErrors>('errorMessages', { required: true });
 
-const { disabled, multi, showWalletImport, forceMultiple = false } = defineProps<{
+const { disabled, multi, showWalletImport, forceMultiple = false, metamask, ryderSymbol } = defineProps<{
   disabled: boolean;
   multi: boolean;
   showWalletImport?: boolean;
   forceMultiple?: boolean;
+  // Whether to show the MetaMask/browser-wallet import (EVM chains).
+  metamask?: boolean;
+  // Ryder One account symbol to import for the current chain ('STX'/'BTC'/'ETH'/'SOL'), if any.
+  ryderSymbol?: string;
 }>();
 
 const emit = defineEmits<{
@@ -256,6 +260,8 @@ defineExpose({
       <WalletAddressesImport
         v-if="showWalletImport"
         :disabled="disabled"
+        :metamask="metamask"
+        :ryder-symbol="ryderSymbol"
         @update:addresses="updateAddressesFromWalletImport($event)"
       />
     </div>
